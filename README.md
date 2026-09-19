@@ -52,9 +52,10 @@ package, `mujoco_ros2_control_plugins` (0.1.2 or newer, which added the `pre_ste
 sudo apt install ros-$ROS_DISTRO-mujoco-ros2-control ros-$ROS_DISTRO-mujoco-ros2-control-plugins
 ```
 
-Both are released for Humble, Jazzy, Kilted and Rolling. This plugin has only been built and tested on Kilted
-so far, and the release on another distribution may be older than 0.1.2; build from source in that case. Then add
-it to the robot's `mujoco_plugins` parameters:
+Both are released for Humble, Jazzy, Kilted, Lyrical and Rolling, but only the releases from 0.1.2 have the
+hooks this plugin needs. CI builds and tests it on Humble, Kilted and Lyrical; on Jazzy and Rolling the released
+version is older and the build fails until it is updated (or build `mujoco_ros2_control` from source). Locally it
+has only been tested on Kilted. Then add it to the robot's `mujoco_plugins` parameters:
 
 ```yaml
 /**:

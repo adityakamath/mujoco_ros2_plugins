@@ -7,14 +7,14 @@ on:
 jobs:
   build-and-test:
     name: build and test (${{ matrix.ros_distro }})
+    # Jazzy and Rolling are left out: their released mujoco_ros2_control_plugins predate the
+    # pre_step and on_reset hooks (0.1.2), so this package does not compile against them yet.
     strategy:
       fail-fast: false
       matrix:
         include:
           - {ros_distro: humble, os: ubuntu-22.04}
-          - {ros_distro: jazzy, os: ubuntu-24.04}
           - {ros_distro: kilted, os: ubuntu-24.04}
-          - {ros_distro: rolling, os: ubuntu-24.04}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -69,7 +69,7 @@ jobs:
       - name: Create workspace
         run: |
           mkdir -p ~/ros2_ws/src
-          cp -r ${{ github.workspace }} ~/ros2_ws/src/mujoco_ros2_plugins
+          cp -r "$GITHUB_WORKSPACE" ~/ros2_ws/src/mujoco_ros2_plugins
 
       - name: Build
         shell: bash
