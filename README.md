@@ -1,7 +1,7 @@
 # mujoco_ros2_plugins
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![ROS 2](https://img.shields.io/badge/ROS%202-Kilted%20(Ubuntu%2024.04)-blue?style=flat&logo=ros&logoSize=auto)
+![ROS 2](https://img.shields.io/badge/ROS_2-blue?style=flat&logo=ros&logoSize=auto)
 ![C++](https://img.shields.io/badge/C++-17-blue?style=flat&logo=cplusplus&logoColor=white)
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-orange)
 [![CI](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml)
