@@ -7,8 +7,8 @@ on:
 jobs:
   build-and-test:
     name: build and test (${{ matrix.ros_distro }})
-    # Jazzy and Rolling are left out: their released mujoco_ros2_control_plugins predate the
-    # pre_step and on_reset hooks (0.1.2), so this package does not compile against them yet.
+    # Jazzy and Rolling are left out until their apt binaries catch up: rosdistro lists 0.1.2, but
+    # the installable mujoco_ros2_control_plugins is older and lacks the hooks (on_reset, pre_step).
     strategy:
       fail-fast: false
       matrix:
