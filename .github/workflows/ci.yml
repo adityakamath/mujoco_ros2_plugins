@@ -50,3 +50,39 @@ jobs:
           . install/setup.sh
           colcon test --packages-select mujoco_ros2_plugins --event-handlers console_direct+
           colcon test-result --verbose
+
+  # Lyrical targets Ubuntu 26.04, so it runs in the ROS image on the 24.04 runner.
+  build-and-test-lyrical:
+    name: build and test (lyrical)
+    runs-on: ubuntu-24.04
+    container: ros:lyrical
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential cmake python3-pytest python3-colcon-common-extensions \
+            ros-lyrical-mujoco-ros2-control-plugins ros-lyrical-ament-cmake-gtest ros-lyrical-ament-cmake-pytest
+
+      - name: Create workspace
+        run: |
+          mkdir -p ~/ros2_ws/src
+          cp -r ${{ github.workspace }} ~/ros2_ws/src/mujoco_ros2_plugins
+
+      - name: Build
+        shell: bash
+        run: |
+          . /opt/ros/lyrical/setup.bash
+          cd ~/ros2_ws
+          colcon build --packages-select mujoco_ros2_plugins
+
+      - name: Test
+        shell: bash
+        run: |
+          . /opt/ros/lyrical/setup.bash
+          cd ~/ros2_ws
+          . install/setup.bash
+          colcon test --packages-select mujoco_ros2_plugins --event-handlers console_direct+
+          colcon test-result --verbose
