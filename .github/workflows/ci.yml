@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: build and test (kilted)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: kilted
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3-pytest \
+            ros-kilted-mujoco-ros2-control-plugins ros-kilted-ament-cmake-gtest ros-kilted-ament-cmake-pytest
+
+      - name: Create workspace
+        run: |
+          mkdir -p ~/ros2_ws/src
+          cp -r ${{ github.workspace }} ~/ros2_ws/src/mujoco_ros2_plugins
+
+      - name: Build
+        run: |
+          . /opt/ros/kilted/setup.sh
+          cd ~/ros2_ws
+          colcon build --packages-select mujoco_ros2_plugins
+
+      - name: Test
+        run: |
+          . /opt/ros/kilted/setup.sh
+          cd ~/ros2_ws
+          . install/setup.sh
+          colcon test --packages-select mujoco_ros2_plugins --event-handlers console_direct+
+          colcon test-result --verbose
