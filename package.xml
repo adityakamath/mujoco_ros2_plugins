@@ -3,7 +3,8 @@
 <package format="3">
   <name>mujoco_ros2_plugins</name>
   <version>0.1.0</version>
-  <description>Plugins for mujoco_ros2_control that give a simulation what real hardware interfaces provide (currently a simulated emergency stop), for any robot</description>
+  <description>Plugins for mujoco_ros2_control that simulate real hardware interface features, for any robot</description>
+  <author email="adityakamath@live.com">Aditya Kamath</author>
   <maintainer email="adityakamath@live.com">Aditya Kamath (Kamath Robotics)</maintainer>
   <license>Apache-2.0</license>
 
@@ -14,6 +15,7 @@
   <depend>pluginlib</depend>
   <depend>mujoco_vendor</depend>
   <depend>mujoco_ros2_control_plugins</depend>
+  <exec_depend>mujoco_ros2_control</exec_depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_cmake_pytest</test_depend>
