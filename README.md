@@ -45,9 +45,16 @@ stay active throughout.
 ### Use
 
 Clone it into the workspace `src/` and build it with `colcon build --packages-select
-mujoco_ros2_plugins`. It needs `mujoco_ros2_control` 0.1.2 or newer on Kilted (`sudo apt install
-ros-kilted-mujoco-ros2-control ros-kilted-mujoco-ros2-control-plugins`). Then add it to the robot's
-`mujoco_plugins` parameters:
+mujoco_ros2_plugins`. It needs `mujoco_ros2_control` and its plugin base
+package, `mujoco_ros2_control_plugins` (0.1.2 or newer, which added the `pre_step` and `on_reset` hooks used here):
+
+```sh
+sudo apt install ros-$ROS_DISTRO-mujoco-ros2-control ros-$ROS_DISTRO-mujoco-ros2-control-plugins
+```
+
+Both are released for Humble, Jazzy, Kilted and Rolling. This plugin has only been built and tested on Kilted
+so far, and the release on another distribution may be older than 0.1.2; build from source in that case. Then add
+it to the robot's `mujoco_plugins` parameters:
 
 ```yaml
 /**:

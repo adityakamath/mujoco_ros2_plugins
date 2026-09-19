@@ -6,8 +6,16 @@ on:
 
 jobs:
   build-and-test:
-    name: build and test (kilted)
-    runs-on: ubuntu-24.04
+    name: build and test (${{ matrix.ros_distro }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {ros_distro: humble, os: ubuntu-22.04}
+          - {ros_distro: jazzy, os: ubuntu-24.04}
+          - {ros_distro: kilted, os: ubuntu-24.04}
+          - {ros_distro: rolling, os: ubuntu-24.04}
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,13 +23,14 @@ jobs:
       - name: Setup ROS 2
         uses: ros-tooling/setup-ros@v0.7
         with:
-          required-ros-distributions: kilted
+          required-ros-distributions: ${{ matrix.ros_distro }}
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake python3-pytest \
-            ros-kilted-mujoco-ros2-control-plugins ros-kilted-ament-cmake-gtest ros-kilted-ament-cmake-pytest
+            ros-${{ matrix.ros_distro }}-mujoco-ros2-control-plugins \
+            ros-${{ matrix.ros_distro }}-ament-cmake-gtest ros-${{ matrix.ros_distro }}-ament-cmake-pytest
 
       - name: Create workspace
         run: |
@@ -30,13 +39,13 @@ jobs:
 
       - name: Build
         run: |
-          . /opt/ros/kilted/setup.sh
+          . /opt/ros/${{ matrix.ros_distro }}/setup.sh
           cd ~/ros2_ws
           colcon build --packages-select mujoco_ros2_plugins
 
       - name: Test
         run: |
-          . /opt/ros/kilted/setup.sh
+          . /opt/ros/${{ matrix.ros_distro }}/setup.sh
           cd ~/ros2_ws
           . install/setup.sh
           colcon test --packages-select mujoco_ros2_plugins --event-handlers console_direct+
