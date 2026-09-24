@@ -3,9 +3,7 @@
 
 #include <mujoco/mujoco.h>
 
-#include <algorithm>
 #include <atomic>
-#include <vector>
 
 #include <mujoco_ros2_control_plugins/mujoco_ros2_control_plugins_base.hpp>
 #include <pluginlib/class_list_macros.hpp>
@@ -19,53 +17,38 @@ namespace mujoco_ros2_plugins
 using PluginBase = mujoco_ros2_control_plugins::MuJoCoROS2ControlPluginBase;
 
 // ROS-free core of the emergency stop, so it can be tested with plain MuJoCo. Robot-agnostic.
+// Matches sts_hardware_interface's real behavior exactly: EnableTorque(motor, 0) on every
+// motor, nothing else - no position hold, no brake. A torque-disabled motor free-spins or
+// free-swings under a hand or gravity; whatever keeps a joint from moving (e.g. a pan-tilt's
+// self-locking gearbox) has to come from that joint's own passive friction, not from here.
 class EmergencyStop
 {
 public:
   // Any thread.
   void set_active(bool active) {active_.store(active);}
   bool active() const {return active_.load();}
-  // Physics thread: call after a world reset so the stop is latched again from the new state.
-  void reset_latch() {latched_ = false;}
+  // Physics thread: no latched state to clear on a world reset.
+  void reset_latch() {}
 
-  // Physics thread, immediately before every mj_step().
-  void apply(const mjModel * model, mjData * data)
+  // Physics thread, immediately before every mj_step(). Toggles MuJoCo's whole-simulation
+  // actuation switch, forcing every actuator's force to zero regardless of type or gains -
+  // the simulated equivalent of cutting power to every motor. Commands (ctrl) keep flowing
+  // in from controllers as normal; they just stop reaching the joints, same as the real
+  // interface leaving hw_cmd_* alone and disabling torque at the servo instead.
+  void apply(const mjModel * model, mjData * /*data*/)
   {
-    if (!active_.load()) {
-      latched_ = false;
-      return;
+    // model is nominally const (compiled, shared) but mjOption's runtime toggles, including
+    // this one, are designed to be flipped live - MuJoCo's own UI does the same.
+    mjOption & opt = const_cast<mjModel *>(model)->opt;
+    if (active_.load()) {
+      opt.disableflags |= mjDSBL_ACTUATION;
+    } else {
+      opt.disableflags &= ~mjDSBL_ACTUATION;
     }
-    if (!latched_) {
-      held_.assign(model->nu, 0.0);
-      for (int i = 0; i < model->nu; ++i) {
-        if (holds_position(model, i)) {
-          double q = data->qpos[model->jnt_qposadr[model->actuator_trnid[2 * i]]];
-          if (model->actuator_ctrllimited[i]) {
-            q = std::clamp(q, model->actuator_ctrlrange[2 * i], model->actuator_ctrlrange[2 * i + 1]);
-          }
-          held_[i] = q;
-        }
-      }
-      latched_ = true;
-    }
-    for (int i = 0; i < model->nu; ++i) {
-      data->ctrl[i] = held_[i];
-    }
-  }
-
-  // A joint-driven position servo (affine bias on position) must hold its angle; zero would
-  // command it to 0 rad. Everything else, e.g. the wheels' velocity servos, is commanded to zero.
-  static bool holds_position(const mjModel * model, int actuator)
-  {
-    return model->actuator_trntype[actuator] == mjTRN_JOINT &&
-           model->actuator_biastype[actuator] == mjBIAS_AFFINE &&
-           model->actuator_biasprm[mjNBIAS * actuator + 1] != 0.0;
   }
 
 private:
   std::atomic<bool> active_{false};
-  bool latched_{false};
-  std::vector<double> held_;
 };
 
 }  // namespace mujoco_ros2_plugins

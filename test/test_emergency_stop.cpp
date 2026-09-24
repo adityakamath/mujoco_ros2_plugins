@@ -8,7 +8,8 @@
 namespace
 {
 
-// Two independent joints: a wheel (velocity servo) and a pan joint (position servo, limited range).
+// Two independent joints: a wheel (velocity servo) and a pan joint (position servo, limited
+// range, with damping/friction/armature - a torque-disabled real STS3215 isn't frictionless).
 const char * kModel = R"(
 <mujoco>
   <compiler angle="radian"/>
@@ -19,7 +20,8 @@ const char * kModel = R"(
       <geom size="0.05"/>
     </body>
     <body name="arm" pos="1 0 0">
-      <joint name="pan_joint" type="hinge" axis="0 0 1" range="-1.5 1.5" armature="0.01"/>
+      <joint name="pan_joint" type="hinge" axis="0 0 1" range="-1.5 1.5" armature="0.01"
+             damping="1.0" frictionloss="0.2"/>
       <geom size="0.05"/>
     </body>
   </worldbody>
@@ -65,12 +67,6 @@ protected:
   mujoco_ros2_plugins::EmergencyStop stop_;
 };
 
-TEST_F(EmergencyStopTest, ActuatorTypesAreClassified)
-{
-  EXPECT_FALSE(mujoco_ros2_plugins::EmergencyStop::holds_position(model_, 0));  // velocity servo
-  EXPECT_TRUE(mujoco_ros2_plugins::EmergencyStop::holds_position(model_, 1));   // position servo
-}
-
 TEST_F(EmergencyStopTest, InactiveLeavesTheControllersCommandsAlone)
 {
   run(500, 2.0, 0.6);
@@ -78,27 +74,42 @@ TEST_F(EmergencyStopTest, InactiveLeavesTheControllersCommandsAlone)
   EXPECT_DOUBLE_EQ(data_->ctrl[1], 0.6);
   EXPECT_GT(wheel_speed(), 1.5);
   EXPECT_NEAR(pan(), 0.6, 0.05);
+  EXPECT_EQ(model_->opt.disableflags & mjDSBL_ACTUATION, 0);
 }
 
-TEST_F(EmergencyStopTest, StopsTheWheelsEvenWhileTheControllerKeepsCommanding)
+TEST_F(EmergencyStopTest, DisablesActuationForEveryMotorEvenWhileTheControllerKeepsCommanding)
 {
   run(500, 2.0, 0.6);
   ASSERT_GT(wheel_speed(), 1.5);
+  const double speed_at_stop = wheel_speed();
   stop_.set_active(true);
-  run(1000, 2.0, 0.6);
-  EXPECT_DOUBLE_EQ(data_->ctrl[0], 0.0);
-  EXPECT_NEAR(wheel_speed(), 0.0, 1e-3);
+  run(200, 2.0, 0.6);
+  EXPECT_NE(model_->opt.disableflags & mjDSBL_ACTUATION, 0);
+  // No friction on this test wheel, so a torque-disabled wheel coasts forever, exactly like
+  // the real one: it isn't commanded to zero and it isn't braked, it's just no longer driven.
+  // qfrc_actuator (the actuator's actual force output) is what proves that, not the speed.
+  EXPECT_DOUBLE_EQ(data_->qfrc_actuator[model_->jnt_dofadr[0]], 0.0);
+  EXPECT_NEAR(wheel_speed(), speed_at_stop, 1e-6);
+  // ctrl itself is left alone; it's the actuator's *effect* that's cut, same as the real
+  // interface leaving hw_cmd_* untouched and disabling torque at the servo instead.
+  EXPECT_DOUBLE_EQ(data_->ctrl[0], 2.0);
+  EXPECT_DOUBLE_EQ(data_->ctrl[1], 0.6);
 }
 
-TEST_F(EmergencyStopTest, HoldsTheLatchedPositionInsteadOfDrivingToZero)
+TEST_F(EmergencyStopTest, APositionServoJointFreelyDriftsUnderAnExternalPushInsteadOfBeingHeld)
 {
   run(500, 0.0, 0.6);
   const double at_stop = pan();
   stop_.set_active(true);
-  run(1000, 0.0, -1.0);  // the controller now asks for something else entirely
-  EXPECT_NEAR(pan(), at_stop, 0.02);
-  EXPECT_NEAR(data_->ctrl[1], at_stop, 0.05);
-  EXPECT_GT(std::abs(data_->ctrl[1]), 0.3);  // not zero
+  const int pan_dof = model_->jnt_dofadr[1];
+  for (int i = 0; i < 200; ++i) {
+    data_->qfrc_applied[pan_dof] = 8.0;  // a hand pushing on the payload
+    data_->ctrl[1] = 0.6;                // the controller still asking to hold position
+    stop_.apply(model_, data_);
+    mj_step(model_, data_);
+  }
+  // Torque is off, so a real external push moves it - it is not pinned to at_stop.
+  EXPECT_GT(std::abs(pan() - at_stop), 0.1);
 }
 
 TEST_F(EmergencyStopTest, ReleaseHandsControlBack)
@@ -108,41 +119,11 @@ TEST_F(EmergencyStopTest, ReleaseHandsControlBack)
   run(300, 2.0, 0.6);
   stop_.set_active(false);
   run(500, 2.0, -0.5);
+  EXPECT_EQ(model_->opt.disableflags & mjDSBL_ACTUATION, 0);
   EXPECT_DOUBLE_EQ(data_->ctrl[0], 2.0);
   EXPECT_DOUBLE_EQ(data_->ctrl[1], -0.5);
   EXPECT_GT(wheel_speed(), 1.5);
   EXPECT_NEAR(pan(), -0.5, 0.05);
-}
-
-TEST_F(EmergencyStopTest, EnablingTwiceKeepsTheFirstLatchedPosition)
-{
-  run(500, 0.0, 0.6);
-  stop_.set_active(true);
-  run(10, 0.0, 0.6);
-  const double first = data_->ctrl[1];
-  stop_.set_active(true);
-  run(200, 0.0, 0.0);
-  EXPECT_DOUBLE_EQ(data_->ctrl[1], first);
-}
-
-TEST_F(EmergencyStopTest, ResetRelatchesFromTheNewWorldState)
-{
-  run(500, 0.0, 0.6);
-  stop_.set_active(true);
-  run(10, 0.0, 0.6);
-  ASSERT_GT(data_->ctrl[1], 0.3);
-  mj_resetData(model_, data_);
-  stop_.reset_latch();
-  run(10, 0.0, 0.6);
-  EXPECT_NEAR(data_->ctrl[1], 0.0, 1e-6);
-}
-
-TEST_F(EmergencyStopTest, LatchedTargetStaysWithinTheActuatorRange)
-{
-  data_->qpos[model_->jnt_qposadr[1]] = 1.7;  // measured slightly outside ctrlrange
-  stop_.set_active(true);
-  stop_.apply(model_, data_);
-  EXPECT_DOUBLE_EQ(data_->ctrl[1], 1.5);
 }
 
 }  // namespace
