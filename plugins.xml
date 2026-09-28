@@ -3,7 +3,12 @@
          type="mujoco_ros2_plugins::EmergencyStopPlugin"
          base_class_type="mujoco_ros2_control_plugins::MuJoCoROS2ControlPluginBase">
     <description>
-      Serves /emergency_stop (std_srvs/SetBool): zeroes velocity actuators and holds position actuators while enabled.
+      Serves /emergency_stop (std_srvs/SetBool): disables all motor actuation while enabled.
     </description>
+  </class>
+  <class name="mujoco_ros2_plugins/ImuPlugin"
+         type="mujoco_ros2_plugins::ImuPlugin"
+         base_class_type="mujoco_ros2_control_plugins::MuJoCoROS2ControlPluginBase">
+    <description>Publishes ideal six-axis MuJoCo site sensors as sensor_msgs/Imu.</description>
   </class>
 </library>

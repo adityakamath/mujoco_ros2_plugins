@@ -17,7 +17,8 @@ one header, `mujoco_ros2_plugins.hpp`.
 
 | Plugin class | What it does |
 |---|---|
-| `mujoco_ros2_plugins/EmergencyStopPlugin` | Serves `/emergency_stop` (`std_srvs/SetBool`) like [sts_hardware_interface](https://github.com/adityakamath/sts_hardware_interface), so the joystick buttons, toggles and scripts that stop a real robot stop the simulated one |
+| `mujoco_ros2_plugins/EmergencyStopPlugin` | Serves `/emergency_stop` (`std_srvs/SetBool`) and disables all simulated motor actuation while active |
+| `mujoco_ros2_plugins/ImuPlugin` | Publishes ideal six-axis MuJoCo accelerometer and gyro readings as `sensor_msgs/Imu` |
 
 ## Adding a plugin
 
@@ -31,16 +32,13 @@ in `CMakeLists.txt` and the class in `plugins.xml`. Put logic that needs no ROS 
 ### Behaviour
 
 While the stop is enabled, the plugin overrides every actuator command immediately before each physics
-step, so it wins over whatever the controllers write. Releasing it hands the commands back.
+step, disabling MuJoCo actuation for all motors while controllers keep running. Releasing it restores actuation.
 
-| Actuator | While stopped |
-|---|---|
-| Velocity servo (e.g. wheels) | commanded to zero |
-| Joint position servo (e.g. pan-tilt, arm joints) | holds the angle it had when the stop was enabled, limited to its control range |
-| Anything else (torque motors, tendons) | commanded to zero |
-
-Enabling twice keeps the first held position; a world reset relatches from the new state. Controllers
-stay active throughout.
+All actuator forces are zero while stopped, including velocity servos, position
+servos and torque motors. Joints may coast or move under gravity; the plugin does
+not latch joint positions or apply a brake. Controllers stay active throughout.
+The stop remains active across a world reset until `/emergency_stop` is called
+with `false`.
 
 ### Use
 
@@ -77,11 +75,47 @@ class that cannot be found is a fatal error in `mujoco_ros2_control`, not a skip
 ### Limitations
 
 The service name is fixed to `/emergency_stop`, so a model with several independent robots shares one
-stop. The stop is a command override, not a torque cut, so a robot on position servos stays powered and
-holds. Only simulation is covered: on real hardware the stop comes from the hardware interface.
+stop. The stop disables MuJoCo actuation, corresponding to a torque cut; passive joint friction still applies. Only simulation is covered: on real hardware the stop comes from the hardware interface.
 
 ## Tests
 
 `colcon test --packages-select mujoco_ros2_plugins`. The C++ tests run the stop against real MuJoCo
-models (velocity and position servos, range limits, latching, release, reset); the Python test checks
+models (velocity and position servos, torque disable, release and reset); the Python test checks
 the plugin registration.
+
+
+## ImuPlugin
+
+This plugin publishes one ideal six-axis IMU from a MuJoCo accelerometer and gyro
+attached to the same site. Add both sensors to the MJCF, then configure the plugin
+under `mujoco_plugins`:
+
+```xml
+<sensor>
+  <accelerometer name="camera_accelerometer" site="camera_imu_site"/>
+  <gyro name="camera_gyroscope" site="camera_imu_site"/>
+</sensor>
+```
+
+```yaml
+/**:
+  ros__parameters:
+    mujoco_plugins:
+      camera_imu:
+        type: "mujoco_ros2_plugins/ImuPlugin"
+        accelerometer: camera_accelerometer
+        gyroscope: camera_gyroscope
+        topic: /camera/imu
+        frame_id: camera_imu_frame
+        publish_rate: 100.0
+```
+
+The five settings use the defaults `accelerometer`, `gyroscope`, `imu`,
+`imu_link` and 100 Hz, respectively. Initialization fails if the named sensors
+are missing, have the wrong types, or refer to different sites; `publish_rate`
+must be finite and positive. Samples use simulation time and MuJoCo specific
+force, including gravity at rest. `orientation_covariance[0] = -1` marks the
+unavailable orientation estimate; zero velocity and acceleration covariance
+matrices mean unknown uncertainty, not calibrated noise. The requested rate is
+bounded by the simulation update rate. Sampling resumes after a simulation-time
+reset. LeKiwi uses this plugin for its simulated Gemini 2 camera IMU.
