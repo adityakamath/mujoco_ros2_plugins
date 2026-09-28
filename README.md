@@ -12,13 +12,11 @@ Plugins for [mujoco_ros2_control](https://github.com/ros-controls/mujoco_ros2_co
 simulation what a real robot's hardware interfaces provide. They know nothing about any particular
 robot: they work from the actuators and joints in the MuJoCo model. Used by
 [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) and
-[pantilt_ros2](https://github.com/adityakamath/pantilt_ros2). All plugins live in one library and share
-one header, `mujoco_ros2_plugins.hpp`.
+[pantilt_ros2](https://github.com/adityakamath/pantilt_ros2). The emergency-stop plugin keeps its ROS-free core in `mujoco_ros2_plugins.hpp`. Camera IMUs use the upstream `mujoco_ros2_control` IMU sensor mapping and standard `imu_sensor_broadcaster`; this package does not provide an IMU plugin.
 
 | Plugin class | What it does |
 |---|---|
 | `mujoco_ros2_plugins/EmergencyStopPlugin` | Serves `/emergency_stop` (`std_srvs/SetBool`) and disables all simulated motor actuation while active |
-| `mujoco_ros2_plugins/ImuPlugin` | Publishes ideal six-axis MuJoCo accelerometer and gyro readings as `sensor_msgs/Imu` |
 
 ## Adding a plugin
 
@@ -80,42 +78,5 @@ stop. The stop disables MuJoCo actuation, corresponding to a torque cut; passive
 ## Tests
 
 `colcon test --packages-select mujoco_ros2_plugins`. The C++ tests run the stop against real MuJoCo
-models (velocity and position servos, torque disable, release and reset); the Python test checks
+models (velocity and position servos, torque disable and release); the Python test checks
 the plugin registration.
-
-
-## ImuPlugin
-
-This plugin publishes one ideal six-axis IMU from a MuJoCo accelerometer and gyro
-attached to the same site. Add both sensors to the MJCF, then configure the plugin
-under `mujoco_plugins`:
-
-```xml
-<sensor>
-  <accelerometer name="camera_accelerometer" site="camera_imu_site"/>
-  <gyro name="camera_gyroscope" site="camera_imu_site"/>
-</sensor>
-```
-
-```yaml
-/**:
-  ros__parameters:
-    mujoco_plugins:
-      camera_imu:
-        type: "mujoco_ros2_plugins/ImuPlugin"
-        accelerometer: camera_accelerometer
-        gyroscope: camera_gyroscope
-        topic: /camera/imu
-        frame_id: camera_imu_frame
-        publish_rate: 100.0
-```
-
-The five settings use the defaults `accelerometer`, `gyroscope`, `imu`,
-`imu_link` and 100 Hz, respectively. Initialization fails if the named sensors
-are missing, have the wrong types, or refer to different sites; `publish_rate`
-must be finite and positive. Samples use simulation time and MuJoCo specific
-force, including gravity at rest. `orientation_covariance[0] = -1` marks the
-unavailable orientation estimate; zero velocity and acceleration covariance
-matrices mean unknown uncertainty, not calibrated noise. The requested rate is
-bounded by the simulation update rate. Sampling resumes after a simulation-time
-reset. LeKiwi uses this plugin for its simulated Gemini 2 camera IMU.

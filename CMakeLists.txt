@@ -8,13 +8,12 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(mujoco_vendor REQUIRED)
 find_package(mujoco_ros2_control_plugins REQUIRED)
 
 # One library holds every plugin: add a source file here and a class to plugins.xml.
-set(PLUGIN_SOURCES src/emergency_stop_plugin.cpp src/imu_plugin.cpp)
+set(PLUGIN_SOURCES src/emergency_stop_plugin.cpp)
 
 add_library(${PROJECT_NAME} SHARED ${PLUGIN_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -23,7 +22,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
   mujoco_ros2_control_plugins::mujoco_ros2_control_plugins
   ${std_srvs_TARGETS}
-  ${sensor_msgs_TARGETS}
   pluginlib::pluginlib)
 
 # Registers the plugin with the mujoco_ros2_control plugin loader.
@@ -47,5 +45,5 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-ament_export_dependencies(rclcpp std_srvs sensor_msgs pluginlib mujoco_vendor mujoco_ros2_control_plugins)
+ament_export_dependencies(rclcpp std_srvs pluginlib mujoco_vendor mujoco_ros2_control_plugins)
 ament_package()
