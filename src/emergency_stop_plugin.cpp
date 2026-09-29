@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <std_srvs/srv/set_bool.hpp>
 
@@ -14,9 +15,18 @@ public:
   {
     node_ = node;
     model_ = model;
-    // Absolute name, the same one sts_hardware_interface serves on the real robot.
+    // The plugin loader passes a sub-node named after the configured plugin key.
+    // Parameters live on its parent under mujoco_plugins.<key>.<parameter>.
+    const std::string parameter_name =
+      "mujoco_plugins." + node->get_sub_namespace() + ".service_name";
+    const std::string service_name =
+      node->get_parameter_or<std::string>(parameter_name, "/emergency_stop");
+    if (service_name.empty()) {
+      RCLCPP_ERROR(node->get_logger(), "%s must not be empty", parameter_name.c_str());
+      return false;
+    }
     service_ = node->create_service<std_srvs::srv::SetBool>(
-      "/emergency_stop",
+      service_name,
       [this](const std_srvs::srv::SetBool::Request::SharedPtr request,
       std_srvs::srv::SetBool::Response::SharedPtr response) {
         stop_.set_active(request->data);

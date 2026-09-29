@@ -16,7 +16,7 @@ robot: they work from the actuators and joints in the MuJoCo model. Used by
 
 | Plugin class | What it does |
 |---|---|
-| `mujoco_ros2_plugins/EmergencyStopPlugin` | Serves `/emergency_stop` (`std_srvs/SetBool`) and disables all simulated motor actuation while active |
+| `mujoco_ros2_plugins/EmergencyStopPlugin` | Serves a configurable `std_srvs/SetBool` service (default `/emergency_stop`) and disables all simulated motor actuation while active |
 
 ## Adding a plugin
 
@@ -35,8 +35,8 @@ step, disabling MuJoCo actuation for all motors while controllers keep running. 
 All actuator forces are zero while stopped, including velocity servos, position
 servos and torque motors. Joints may coast or move under gravity; the plugin does
 not latch joint positions or apply a brake. Controllers stay active throughout.
-The stop remains active across a world reset until `/emergency_stop` is called
-with `false`.
+The stop remains active across a world reset until the configured service
+(default `/emergency_stop`) is called with `false`.
 
 ### Use
 
@@ -60,6 +60,7 @@ Then add it to the robot's `mujoco_plugins` parameters:
     mujoco_plugins:
       emergency_stop_plugin:
         type: "mujoco_ros2_plugins/EmergencyStopPlugin"
+        service_name: /emergency_stop  # optional; this is the default
 ```
 
 ```sh
@@ -72,11 +73,16 @@ class that cannot be found is a fatal error in `mujoco_ros2_control`, not a skip
 
 ### Limitations
 
-The service name is fixed to `/emergency_stop`, so a model with several independent robots shares one
-stop. The stop disables MuJoCo actuation, corresponding to a torque cut; passive joint friction still applies. Only simulation is covered: on real hardware the stop comes from the hardware interface.
+`service_name` is read from `mujoco_plugins.<plugin-key>.service_name`; leaving it out uses
+`/emergency_stop`. It may be set to an absolute name such as `/robot_a/emergency_stop`.
+The setting changes only the service endpoint. The plugin uses MuJoCo's global actuation switch,
+so every actuator in a shared model stops together even if multiple plugin instances have different
+service names. Independent per-robot stops would require actuator-scoped control. Passive joint
+friction still applies. Only simulation is covered: on real hardware the stop comes from the
+hardware interface.
 
 ## Tests
 
 `colcon test --packages-select mujoco_ros2_plugins`. The C++ tests run the stop against real MuJoCo
 models (velocity and position servos, torque disable and release); the Python test checks
-the plugin registration.
+the plugin registration; the service test checks the default and configured endpoints.

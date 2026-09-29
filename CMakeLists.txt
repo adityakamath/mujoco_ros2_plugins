@@ -40,6 +40,11 @@ if(BUILD_TESTING)
   target_include_directories(test_emergency_stop PRIVATE include)
   target_link_libraries(test_emergency_stop ${PROJECT_NAME} mujoco::mujoco)
 
+  ament_add_gtest(test_emergency_stop_service test/test_emergency_stop_service.cpp)
+  target_include_directories(test_emergency_stop_service PRIVATE include)
+  target_link_libraries(test_emergency_stop_service
+    ${PROJECT_NAME} pluginlib::pluginlib ${std_srvs_TARGETS})
+
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_plugin_registration test/test_plugin_registration.py TIMEOUT 60)
 endif()

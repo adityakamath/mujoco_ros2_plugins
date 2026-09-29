@@ -3,7 +3,7 @@
          type="mujoco_ros2_plugins::EmergencyStopPlugin"
          base_class_type="mujoco_ros2_control_plugins::MuJoCoROS2ControlPluginBase">
     <description>
-      Serves /emergency_stop (std_srvs/SetBool): disables all motor actuation while enabled.
+      Serves the configured emergency-stop service (default /emergency_stop, std_srvs/SetBool): disables all motor actuation while enabled.
     </description>
   </class>
 </library>
