@@ -19,10 +19,10 @@ public:
     // Parameters live on its parent under mujoco_plugins.<key>.<parameter>.
     const std::string parameter_name =
       "mujoco_plugins." + node->get_sub_namespace() + ".service_name";
-    std::string service_name;
-    if (!node->get_parameter(parameter_name, service_name)) {
-      service_name = node->declare_parameter<std::string>(parameter_name, "/emergency_stop");
+    if (!node->has_parameter(parameter_name)) {
+      node->declare_parameter<std::string>(parameter_name, "/emergency_stop");
     }
+    const std::string service_name = node->get_parameter(parameter_name).as_string();
     if (service_name.empty()) {
       RCLCPP_ERROR(node->get_logger(), "%s must not be empty", parameter_name.c_str());
       return false;
