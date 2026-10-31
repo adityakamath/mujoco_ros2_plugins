@@ -5,7 +5,6 @@
 ![C++](https://img.shields.io/badge/C++-17-blue?style=flat&logo=cplusplus&logoColor=white)
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-orange)
 [![CI](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml)
-[![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/mujoco_ros2_plugins)
 ![License](https://img.shields.io/github/license/adityakamath/mujoco_ros2_plugins?label=License)
 
 Plugins for [mujoco_ros2_control](https://github.com/ros-controls/mujoco_ros2_control) that give a
