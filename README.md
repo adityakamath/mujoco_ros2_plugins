@@ -1,7 +1,7 @@
 # mujoco_ros2_plugins
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![ROS 2](https://img.shields.io/badge/ROS_2-blue?style=flat&logo=ros&logoSize=auto)
+![ROS 2](https://img.shields.io/badge/ROS_2-Kilted_%7C_Jazzy-blue?style=flat&logo=ros&logoSize=auto)
 ![C++](https://img.shields.io/badge/C++-17-blue?style=flat&logo=cplusplus&logoColor=white)
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.x-orange)
 [![CI](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/adityakamath/mujoco_ros2_plugins/actions/workflows/ci.yml)
@@ -48,9 +48,9 @@ sudo apt install ros-$ROS_DISTRO-mujoco-ros2-control ros-$ROS_DISTRO-mujoco-ros2
 ```
 
 Both are released for Humble, Jazzy, Kilted, Lyrical and Rolling, but only 0.1.2 has the hooks this plugin
-needs. CI builds and tests it on Humble, Kilted and Lyrical. On Jazzy and Rolling the apt binaries were still
-older than 0.1.2 when last checked (the release is registered but not yet built there), so the build fails
-until they catch up, or you build `mujoco_ros2_control` from source. Locally it has only been tested on Kilted.
+needs. CI builds and tests it on Humble, Jazzy, Kilted and Lyrical with the 0.1.2 apt binaries. Rolling is not
+in CI; if its apt binaries are older than 0.1.2, build `mujoco_ros2_control` from source. Locally it has only
+been tested on Kilted.
 Then add it to the robot's `mujoco_plugins` parameters:
 
 ```yaml
