@@ -7,14 +7,13 @@ on:
 jobs:
   build-and-test:
     name: build and test (${{ matrix.ros_distro }})
-    # Jazzy and Rolling are left out until their apt binaries catch up: rosdistro lists 0.1.2, but
-    # the installable mujoco_ros2_control_plugins is older and lacks the hooks (on_reset, pre_step).
     strategy:
       fail-fast: false
       matrix:
         include:
           - {ros_distro: humble, os: ubuntu-22.04}
           - {ros_distro: kilted, os: ubuntu-24.04}
+          - {ros_distro: jazzy, os: ubuntu-24.04}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
