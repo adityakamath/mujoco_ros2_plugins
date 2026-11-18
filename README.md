@@ -9,8 +9,8 @@
 
 Plugins for [mujoco_ros2_control](https://github.com/ros-controls/mujoco_ros2_control) that give a
 simulation what a real robot's hardware interfaces provide. They know nothing about any particular
-robot: they work from the actuators and joints in the MuJoCo model. Used by
-[lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2). The emergency-stop plugin keeps its ROS-free core in `mujoco_ros2_plugins.hpp`. Camera IMUs use the upstream `mujoco_ros2_control` IMU sensor mapping and standard `imu_sensor_broadcaster`; this package does not provide an IMU plugin.
+robot: they work from the actuators and joints in the MuJoCo model.
+[lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) is the reference platform. The emergency-stop plugin keeps its ROS-free core in `mujoco_ros2_plugins.hpp`. Camera IMUs use the upstream `mujoco_ros2_control` IMU sensor mapping and standard `imu_sensor_broadcaster`; this package does not provide an IMU plugin.
 
 | Plugin class | What it does |
 |---|---|
