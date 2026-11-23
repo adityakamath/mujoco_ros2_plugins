@@ -3,3 +3,6 @@ install/
 log/
 __pycache__/
 *.pyc
+
+# Local colcon opt-out (e.g. macOS builds)
+COLCON_IGNORE
